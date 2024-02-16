@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {User} = require('../db');
+const {User, Account} = require('../db');
 const zod = require('zod');
 const jwt = require('jsonwebtoken')
 const JWT_SECRET = require('./config')
@@ -25,7 +25,7 @@ router.post('/signup', async (req, res) => {
         const existingUser = await User.findOne({userName: userName});
         if(existingUser){
             return res.status(400).json({message: "User already exists"})
-        }else{
+        }
             const user = await User.create({
                 firstName: firstName,
                 lastName: lastName,
@@ -33,8 +33,13 @@ router.post('/signup', async (req, res) => {
                 password: password
 
             })
-        }
-        const userId = User._id;
+        
+        const userId = user._id;
+
+        await Account.create({
+            userId,
+            balance: 1 + Math.random()*10000
+        })
 
         const token = jwt.sign({userId}, JWT_SECRET);
         res.json({
@@ -52,7 +57,7 @@ router.post('/signin', async (req, res) => {
         const {userName, password} = req.body;
         const existingUser = await User.findOne({userName: userName, password: password});
         if (existingUser){
-            const userId = User._id;
+            const userId = existingUser._id;
             const token = jwt.sign({userId}, JWT_SECRET);
             res.status(200).json({  
                 token: token
